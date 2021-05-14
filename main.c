@@ -1,37 +1,26 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#define clb(); fflush(stdin);
-#define cls(); system("cls");
+//#include<string.h>
 
-const int tsize = 5000;
+const char* INPUT_FMT = "%5000s";
+const int tsize = 5001;
 
-void put(char *s)
+char const *enter_text_encrypted_with = "Enter text that will be encrypted with";
+char const *will_be_saved_in = "will be saved in the corresponding file\nat the same with program directory";
+
+void ask_for_character_to_continue()
 {
-    printf("\n[%sput]:  ", s);
-}
-
-void encrypted(char *s)
-{
-    printf("Enter text that will be encrypted with %s\n", s);
-}
-
-void saved(char *s)
-{
-    printf("\n**%s will be saved in the corresponding file\nat the same with program directory\n", s);
-}
-
-void cntn()
-{
-    printf("\nPress any key\n");
-    put("In");
-    clb();
+    printf("\nPress any key\n"
+           "\n"
+           "[Input]: ");
+    fflush(stdin);
     getchar();
 }
 
-int scmp(char const *first, char const *second)
+int my_strcmp(char const *first, char const *second)
 {
-    int i, ret;
+    int i;
     for(i= 0; first[i] != '\0' && second[i] != '\0'; i++)
     {
         if(first[i] < second[i])
@@ -42,7 +31,7 @@ int scmp(char const *first, char const *second)
     return 0;
 }
 
-int slen(char const *s)
+int my_strlen(char const *s)
 {
     int i;
     for(i = 0; s[i] != '\0'; i++);
@@ -51,70 +40,71 @@ int slen(char const *s)
 
 //string length without counting spaces
 //(specifically for vigenere cipher)
-int slensp(char const *s)
+int my_strlensp(char const *s)
 {
     int i, j= 0;
     for(i = 0; s[i] != '\0'; i++)
-    {
-        if(s[i] != ' ')
-            j++;
-    }
+        if(s[i] != ' ') j++;
     return j;
 }
 
-int shift(char *text, int shft, char *lang_mode)
+//
+int caesar_shift(char *text, int shft)
 {
     char ch;
 
-    if(scmp(lang_mode,"eng") == 0)
+    for(int i = 0; text[i] != '\0'; ++i)
     {
-        for(int i = 0; text[i] != '\0'; ++i)
+        ch = text[i];
+
+        if(ch >= 'a' && ch <= 'z')
         {
-            ch = text[i];
-
-            if(ch >= 'a' && ch <= 'z')
+            if(shft >= 0)
                 ch = 'a' + (ch - 'a' + shft)%26;
-
-            else if(ch >= 'A' && ch <= 'Z')
-                ch = 'A' + (ch - 'A' + shft)%26;
-
-            text[i] = ch;
+            else
+                ch = 'a' + (ch - 'a' + 26 + shft%26)%26;
         }
-        return 0;
+        else if(ch >= 'A' && ch <= 'Z')
+        {
+            if(shft >= 0)
+                ch = 'A' + (ch - 'A' + shft)%26;
+            else
+                ch = 'A' + (ch - 'A' + 26 + shft%26)%26;
+        }
+        text[i] = ch;
     }
+    return 0;
 }
 
-int caesar(char *lang_mode, char *crypt_mode)
+int caesar(char *crypt_mode)
 {
     char text[tsize], ch;
 	int n;
 
-	if(scmp(crypt_mode, "encr") == 0)
+	if(my_strcmp(crypt_mode, "encr") == 0)
     {
         FILE *fptext = fopen("1.1.text.txt", "a");
         //where entered text will be saved
         FILE *fpencr = fopen("1.1.text.encr.txt", "a");
         //where encrypted text will remain
 
-        encrypted("Caesar cipher");
-        put("In");
+        printf("%s Caesar cipher\n", enter_text_encrypted_with);
+        printf("\n[Input]: ");
+
+//        scanf (INPUT_FMT, text);
         gets(text);
 
         fprintf(fptext, "%s\n", text);
         //saving original text in the corresponding file
 
-        printf("\nEnter shift\n");
-        clb();
-        put("In");
+        printf("\nEnter shift value (an integer)\n"
+               "\n[Input]: ");
+        fflush(stdin);
         scanf("%d", &n);
 
-        if(scmp(lang_mode, "eng") == 0)
-            shift(text, n, "eng");
+        caesar_shift(text, n);
 
-        put("Out");
-        printf("%s\n", text);
-
-        saved("Encrypted text");
+        printf("\n[Output]: %s\n\nEncrypted text %s", text, will_be_saved_in);
 
         fprintf(fpencr, "%s\n", text);
 
@@ -122,12 +112,11 @@ int caesar(char *lang_mode, char *crypt_mode)
         fclose(fpencr);
     }
 
-    else if(scmp(crypt_mode, "decr") == 0)
+    else if(my_strcmp(crypt_mode, "decr") == 0)
     {
-        printf("Enter encrypted text\n");
-        put("In");
+        printf("Enter encrypted text\n"
+               "\n[Input]: ");
         gets(text);
-        int e = !scmp(lang_mode, "eng");
 
         FILE *fpencr = fopen("1.2.text.encr.txt", "a");
         fprintf(fpencr, "%s\n", text);
@@ -137,20 +126,19 @@ int caesar(char *lang_mode, char *crypt_mode)
         while(t)
         {
             printf("\nDo you know the shift value of the encrypted text? [y/n]: ");
-            clb();
+            fflush(stdin);
             scanf("%c", &ch);
             if(ch == 'n' || ch == 'N')
             {
                 printf("\nAll possible decrypted texts: \n\n");
 
-                for(int i = 0; i < 25; i++)
+                for(int i = 0; i < 26; i++)
                 {
-                    if(e)
-                        shift(text, 1, "eng");
-                    printf("%2d. %s\n", i+1, text);
+                    caesar_shift(text, 1);
+                    printf("%2d. %s - shift value: %2d\n", i + 1, text, 25 - i);
                 }
-                if(e)
-                    shift(text, 1, "eng");
+
+                caesar_shift(text, 1);
                 // to make full cycle and return to starting text
 
                 printf("\nEnter the number of correct decryption "
@@ -158,14 +146,18 @@ int caesar(char *lang_mode, char *crypt_mode)
 
                 while(1)
                 {
+                    fflush(stdin);
                     scanf("\n%d", &n);
 
+                    if ( n < 0 || n > 25 ) { printf("Make your choice correctly please: "); continue; }
+
+                    /*
                     while(n < 0 || n > 25)
                     {
                         printf("Make your choice correctly please: ");
+                        fflush(stdin);
                         scanf("%d", &n);
-                        clb();
-                    }
+                    }*/
 
                     if(n == 0)
                     {
@@ -173,14 +165,13 @@ int caesar(char *lang_mode, char *crypt_mode)
                         return -1;
                     }
 
-                    if(e)
-                        shift(text, n, "eng");
+                    caesar_shift(text, n-1);
 
                     printf("\nIs your choice: \n%d. %s [y/n]: ", n, text);
                     ch = getchar();
                     while( ch != 'y' && ch != 'Y' && ch != 'n' && ch != 'N')
                     {
-                        clb();
+                        fflush(stdin);
                         ch = getchar();
                     }
                     if (ch == 'y' || ch == 'Y')
@@ -191,40 +182,30 @@ int caesar(char *lang_mode, char *crypt_mode)
                     else
                     {
                         printf("\nMake your choice: ");
-                        if(e) shift(text, (26-n) % 26, "eng");
+                        caesar_shift(text, (26-n+1) % 26);
                         continue;
                     }
                 }
             }
             else if(ch == 'y' || ch == 'Y')
             {
-                printf("\nEnter what shift value was used to encrypt following text\n");
-                put("In");
+                printf("\nEnter what shift value was used to encrypt following text\n"
+                       "\n[Input]: ");
                 scanf("%d", &n);
-                if(n >= 0)
-                {
-                    if(e)
-                        shift(text, 26 - n%26, "eng");
-                }
 
-                else
-                    continue;
+                caesar_shift(text, 26 - n%26);
 
-                put("Out");
-                printf("%s\n", text);
-                printf("\nIs this text decrypted? [y/n]: ");
-                clb();
+                printf("\n[Output]: %s\n\nIs this text decrypted? [y/n]: ", text);
+                fflush(stdin);
                 scanf("%c", &ch);
                 if(ch == 'y' || ch == 'Y')
                     break;
                 else
-                {
-                    if(e) shift(text, (n)%26, "eng");
-                }
+                    caesar_shift(text, n%26);
             }
         }
 
-        saved("Decrypted text");
+        printf("\nDecrypted text %s", will_be_saved_in);
         FILE *fpdecr = fopen("1.2.text.decr.txt", "a");
         fprintf(fpdecr, "%s\n", text);
         fclose(fpencr);
@@ -232,34 +213,49 @@ int caesar(char *lang_mode, char *crypt_mode)
     }
 }
 
-int cadd(char *ch, char k, char *lang_mode, char *crypt_mode)
+int vigenere_character_add(char *ch, char k, char *crypt_mode)
 {
-    if(scmp(lang_mode, "eng") == 0)
+    if(k >= 'a' && k <= 'z')
+        k -= 'a';
+    else if(k >= 'A' && k <= 'Z')
+        k -= 'A';
+
+    if(my_strcmp(crypt_mode, "encr") == 0)
     {
-        if(k >= 'a' && k <= 'z')
-            k -= 'a';
-        else if(k >= 'A' && k <= 'Z')
-            k -= 'A';
+        if(*ch >= 'a' && *ch <= 'z')
+            *ch = 'a' + (*ch-'a'+k)%26;
+        else if(*ch >= 'A' && *ch <= 'Z')
+            *ch = 'A' + (*ch -'A'+k)%26;
+        return 0;
+    }
 
-        if(scmp(crypt_mode, "encr") == 0)
-        {
-            if(*ch >= 'a' && *ch <= 'z')
-                *ch = 'a' + (*ch-'a'+k)% ('z' - 'a' + 1);
-            else if(*ch >= 'A' && *ch <= 'Z')
-                *ch = 'A' + (*ch -'A'+k)%('Z' - 'A' + 1);
-            return 0;
-        }
-
-        if(scmp(crypt_mode, "decr") == 0)
-        {
-           if(*ch >= 'a' && *ch <= 'z')
-                *ch = 'a' + (*ch - 'a' + 26 - k)%26;
-           else if(*ch >= 'A' && *ch <= 'Z')
-                *ch = 'A' + (*ch -'A' + 26 - k )%26;
-            return 0;
-        }
+    if(my_strcmp(crypt_mode, "decr") == 0)
+    {
+       if(*ch >= 'a' && *ch <= 'z')
+            *ch = 'a' + (*ch - 'a' + 26 - k)%26;
+       else if(*ch >= 'A' && *ch <= 'Z')
+            *ch = 'A' + (*ch -'A' + 26 - k )%26;
+        return 0;
     }
 }
+
+/*
+int keycorrectness2(char *key)
+{
+    int status = 0;
+    int i, j;
+
+    for(i = 0; key[i] != '\0'; i++)
+    {
+        char c = key[i];
+        if( isspace( c ) ) {
+          key[i]
+
+        } else {
+            if( !isalpha( c ) ) { status = 1; break };
+        }
+    }
+}*/
 
 int keycorrectness(char *key)
 {
@@ -292,35 +288,32 @@ int keycorrectness(char *key)
     return 0;
 }
 
-int vigenere(char *text, char *key, char *lang_mode, char *mode)
+int vigenere(char *text, char *key, char *mode)
 {
-    int eng = !(scmp(lang_mode, "eng"));
-
-    if(slensp(text) < slen(key))
-        key[slensp(text)] = '\0';
-    int i, klength = slen(key);
+    if(my_strlensp(text) < my_strlen(key))
+        key[my_strlensp(text)] = '\0';
+    int i, klength = my_strlen(key);
     int j = 0;
 
-    if(scmp(mode, "encr") == 0 && eng)
+    if(my_strcmp(mode, "encr") == 0)
     {
         for(i = 0; text[i] != '\0'; i++)
         {
             if((text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z'))
             {
-                cadd((text+i), key[j%klength], "eng", "encr");
-                j++;
+                vigenere_character_add((text+i), key[j%klength], "encr"); j++;
             }
         }
         return 0;
     }
 
-    else if(scmp(mode, "decr") == 0 && eng)
+    else if(my_strcmp(mode, "decr") == 0)
     {
         for(i = 0; text[i] != '\0'; i++)
         {
             if((text[i] >= 'a' && text[i] <= 'z') || (text[i] >= 'A' && text[i] <= 'Z'))
             {
-                cadd((text+i), key[j%klength], "eng", "decr");
+                vigenere_character_add((text+i), key[j%klength], "decr");
                 j++;
             }
         }
@@ -340,15 +333,16 @@ int main()
 
     while(lvl0)
     {
-        cls();
+        fflush(stdin);
+        system("cls");
         printf("Choose your cipher\n"
                "\n"
                "1.Caesar cipher\n"
                "2.Vigenere cipher\n"
                "3.Info\n"
                "4.Exit\n");
-        put("In");
-        clb();
+        printf("\n[Input]: ");
+        fflush(stdin);
         scanf("%d", &ch0);
         switch(ch0)
         {
@@ -356,43 +350,43 @@ int main()
             lvl1 = 1;
             while(lvl1)
             {
-                cls();
+                system("cls");
                 printf("Caesar cipher\n"
                        "\n"
                        "1.Encryption mode\n"
                        "2.Decryption mode\n"
                        "3.Info\n"
                        "4.Back\n");
-                put("In");
-                clb();
+                printf("\n[Input]: ");
+                fflush(stdin);
                 scanf("%d", &ch1);
                 switch(ch1)
                 {
                     case 1:
-                        cls();
-                        clb();
-                        caesar("eng", "encr");
-                        cntn();
+                        system("cls");
+                        fflush(stdin);
+                        caesar("encr");
+                        ask_for_character_to_continue();
                         break;
                     case 2:
-                        cls();
-                        clb();
-                        caesar("eng", "decr");
-                        cntn();
+                        system("cls");
+                        fflush(stdin);
+                        caesar("decr");
+                        ask_for_character_to_continue();
                         break;
                     case 3:
-                        cls();
+                        system("cls");
                         printf("Some information about this cipher method\n"
                                "\n"
                                "\n");
-                        cntn();
+                        ask_for_character_to_continue();
                         break;
                     case 4:
-                        cls();
+                        system("cls");
                         lvl1 = 0;
                         break;
                     default:
-                        cls();
+                        system("cls");
                         break;
                 }
             }
@@ -402,23 +396,23 @@ int main()
             lvl2 = 1;
             while(lvl2)
             {
-                cls();
+                system("cls");
                 printf("Vigenere cipher\n"
                        "\n"
                        "1.Encryption mode\n"
                        "2.Decryption mode\n"
                        "3.Info\n"
                        "4.Back\n");
-                put("In");
-                clb();
+                printf("\n[Input]: ");
+                fflush(stdin);
                 scanf("%d", &ch2);
                 switch(ch2)
                 {
                     case 1:
-                        cls();
-                        encrypted("Vigenere cipher");
-                        put("In");
-                        clb();
+                        system("cls");
+                        printf("%s Vigenere cipher\n", enter_text_encrypted_with);
+                        printf("\n[Input]: ");
+                        fflush(stdin);
                         gets(text);
 
                         int tr = 1;
@@ -426,8 +420,8 @@ int main()
                         while(tr)
                         {
                             printf("\nEnter key string\n");
-                            put("In");
-                            clb();
+                            printf("\n[Input]: ");
+                            fflush(stdin);
                             gets(key);
 
                             if(keycorrectness(key) == 1)
@@ -439,12 +433,12 @@ int main()
                             tr = 0;
                         }
 
-                        FILE *fptext = fopen("2.1.text.txt", "a");
-                        FILE *fpencr = fopen("2.1.text.encr.txt", "a");
-                        FILE *fpkey = fopen("2.1.key.txt", "a");
+                        FILE *fptext = fopen("clear_text.txt", "a");
+                        FILE *fpencr = fopen("encrypted_text.txt", "a");
+                        FILE *fpkey = fopen("key.txt", "a");
 
                         fprintf(fptext, "%s\n", text);
-                        vigenere(text, key, "eng", "encr");
+                        vigenere(text, key, "encr");
                         fprintf(fpencr, "%s\n", text);
 
                         fprintf(fpkey, "%s\n", key);
@@ -452,18 +446,15 @@ int main()
                         fclose(fptext);
                         fclose(fpencr);
                         fclose(fpkey);
-                        put("Out");
-                        printf("%s\n", text);
-                        saved("Encrypted text and key");
-                        cntn();
-
+                        printf("\n[Output]: %s\n\nEncrypted text and key %s", text, will_be_saved_in);
+                        ask_for_character_to_continue();
                         break;
 
                     case 2:
-                        cls();
-                        printf("Enter encrypted text\n");
-                        put("In");
-                        clb();
+                        system("cls");
+                        printf("Enter encrypted text\n"
+                                "\n[Input]: ");
+                        fflush(stdin);
                         gets(text);
                         FILE *fpencr2 = fopen("2.2text.encr.txt", "a");
                         fprintf(fpencr2, "%s\n", text);
@@ -474,37 +465,33 @@ int main()
                             tr = 1;
                             while(tr)
                             {
-                                printf("\nEnter key\n");
-                                put("In");
-                                clb();
+                                printf("\nEnter key\n"
+                                       "\n[Input]: ");
+                                fflush(stdin);
                                 gets(key);
                                 if(keycorrectness(key))
                                 {
                                     printf("\nKey is incorrect. It must contain only letters\n");
                                     continue;
                                 }
-
                                 tr = 0;
                             }
 
-                            vigenere(text, key, "eng", "decr");
-                            printf("\n\n");
-                            put("Out");
-                            printf("%s\n", text);
-                            printf("\nIs the text decrypted? [y/n]: ");
-                            clb();
+                            vigenere(text, key, "decr");
+                            printf("\n\n[Output]: %s\n\nIs the text decrypted? [y/n]: ", text);
+                            fflush(stdin);
                             char chr;
-                            clb();
+                            fflush(stdin);
                             scanf("%c", &chr);
                             while(chr != 'n' && chr != 'N' && chr != 'y' && chr != 'Y')
                             {
-                                clb();
+                                fflush(stdin);
                                 printf("\nIs the text decrypted? [y/n]: ");
                                 scanf("%c", &chr);
                             }
 
                             if(chr == 'n' || chr == 'N')
-                                vigenere(text, key, "eng", "encr");
+                                vigenere(text, key, "encr");
                             else
                                 correct = 1;
                         }
@@ -517,48 +504,41 @@ int main()
                         fclose(fpdecr2);
                         fclose(fpencr2);
                         fclose(fpkey2);
-                        saved("Encrypted text and key");
-                        cntn();
-
+                        printf("\nDecrypted text and key %s", will_be_saved_in);
+                        ask_for_character_to_continue();
                         break;
 
                     case 3:
-                        cls();
-                        printf("Some information about this cipher method\n"
-                               "\n"
-                               "\n");
-                        printf("\nPress any key\n");
-                        put("In");
-                        clb();
-                        getchar();
+                        system("cls");
+                        printf("Some information about this cipher method\n\n\n");
+                        ask_for_character_to_continue();
                         break;
                     case 4:
-                        cls();
+                        system("cls");
                         lvl2 = 0;
                         break;
                     default:
-                        clb();
-                        cls();
+                        fflush(stdin);
+                        system("cls");
                         break;
                 }
             }
             break;
         case 3:
-            cls();
+            system("cls");
             printf("Some information about the program and how to use it\n"
                    "\n"
                    "\t\t\t- 2021 -"
                    "\n");
-            printf("\nPress any key\n");
-            put("In");
-            clb();
+            printf("\nPress any key\n\n[Input]: ");
+            fflush(stdin);
             getchar();
             break;
         case 4:
             lvl0 = 0;
             break;
         default:
-            cls();
+            system("cls");
             break;
         }
     }
